@@ -32,6 +32,72 @@ const DIFFICULTY_SETTINGS = {
   },
 };
 
+// UI Colors and Style Constants
+const UI_COLORS = {
+  headerBg: 0x000000,
+  panelBg: 0x111111,
+  buttonBg: 0x222222,
+  buttonHover: 0x333333,
+  buttonActive: 0x444444,
+  accent1: 0x00ffff, // Cyan
+  accent2: 0xff00ff, // Magenta
+  textPrimary: 0xffffff,
+  textSecondary: 0x888888,
+  scoreGreen: 0x00ff88,
+  timerYellow: 0xffff00,
+  timerOrange: 0xffa500,
+  timerRed: 0xff0000,
+  overlay: 0x000000,
+  difficultyEasy: 0x00ff88,
+  difficultyNormal: 0xffff00,
+  difficultyHard: 0xff4444,
+  glowColor: 0x00ffff,
+};
+
+// Helper function to get difficulty color
+function getDifficultyColor(difficulty) {
+  switch (difficulty) {
+    case "easy":
+      return UI_COLORS.difficultyEasy;
+    case "normal":
+      return UI_COLORS.difficultyNormal;
+    case "hard":
+      return UI_COLORS.difficultyHard;
+    default:
+      return UI_COLORS.textPrimary;
+  }
+}
+
+const BUTTON_STYLES = {
+  default: {
+    fill: UI_COLORS.textPrimary,
+    fontSize: 18,
+    fontFamily: "Arial",
+    fontWeight: "bold",
+    dropShadow: true,
+    dropShadowColor: UI_COLORS.glowColor,
+    dropShadowDistance: 2,
+    dropShadowAlpha: 0.5,
+  },
+  header: {
+    fontSize: 42,
+    letterSpacing: 4,
+    fill: UI_COLORS.accent1,
+    dropShadowColor: UI_COLORS.accent1,
+    dropShadowDistance: 4,
+    dropShadowAlpha: 0.8,
+  },
+  stats: {
+    fontSize: 20,
+    fill: UI_COLORS.textSecondary,
+  },
+  value: {
+    fontSize: 36,
+    dropShadowDistance: 4,
+    dropShadowAlpha: 0.8,
+  },
+};
+
 // Initialize PixiJS Application
 const app = new PIXI.Application({
   width: window.innerWidth,
@@ -47,92 +113,167 @@ document.getElementById("gameContainer").appendChild(app.view);
 function createUIContainer() {
   const container = new PIXI.Container();
 
-  // Create semi-transparent header background
-  const headerBg = new PIXI.Graphics();
-  headerBg.beginFill(0x000000, 0.7);
-  headerBg.drawRect(0, 0, app.screen.width, 80);
-  headerBg.endFill();
-  container.addChild(headerBg);
+  // Create header panel with sci-fi design
+  const headerPanel = new PIXI.Graphics();
+  headerPanel.beginFill(UI_COLORS.headerBg, 0.9);
+  headerPanel.drawRect(0, 0, app.screen.width, 80);
 
-  // Create game title
-  const titleText = new PIXI.Text("COSMIC DEBRIS COLLECTOR", {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fontWeight: "bold",
-    fill: 0xffffff,
+  // Add accent lines
+  headerPanel.lineStyle(2, UI_COLORS.accent1);
+  headerPanel.moveTo(0, 80);
+  headerPanel.lineTo(app.screen.width, 80);
+
+  // Add diagonal accent lines
+  headerPanel.lineStyle(1, UI_COLORS.accent1, 0.5);
+  for (let x = 0; x < app.screen.width; x += 50) {
+    headerPanel.moveTo(x, 0);
+    headerPanel.lineTo(x + 30, 80);
+  }
+
+  headerPanel.endFill();
+
+  // Add glow filter to header
+  const headerGlow = new PIXI.BlurFilter();
+  headerGlow.blur = 2;
+  headerPanel.filters = [headerGlow];
+
+  container.addChild(headerPanel);
+
+  // Create game title with enhanced sci-fi style
+  const titleText = new PIXI.Text("COSMIC DEBRIS", {
+    ...BUTTON_STYLES.default,
+    ...BUTTON_STYLES.header,
+    fontSize: 32,
   });
-  titleText.x = 20;
+  titleText.x = 30;
   titleText.y = 25;
   container.addChild(titleText);
 
-  // Add current difficulty display
-  const difficultyContainer = new PIXI.Container();
-
-  const diffLabel = new PIXI.Text("Current Difficulty:", {
-    fontFamily: "Arial",
-    fontSize: 16,
-    fill: 0xcccccc,
-  });
-  diffLabel.x = app.screen.width - 600;
-  diffLabel.y = 15;
-
-  const diffValue = new PIXI.Text(currentDifficulty.toUpperCase(), {
-    fontFamily: "Arial",
-    fontSize: 20,
-    fontWeight: "bold",
-    fill: getDifficultyColor(currentDifficulty),
-  });
-  diffValue.x = app.screen.width - 460;
-  diffValue.y = 13;
-
-  difficultyContainer.addChild(diffLabel);
-  difficultyContainer.addChild(diffValue);
-  container.addChild(difficultyContainer);
+  // Create info panel with modern layout
+  const infoPanel = createInfoPanel();
+  container.addChild(infoPanel);
 
   return container;
 }
 
-// Helper function to get difficulty color
-function getDifficultyColor(difficulty) {
-  switch (difficulty) {
-    case "easy":
-      return 0x00ff00; // Green
-    case "normal":
-      return 0xffff00; // Yellow
-    case "hard":
-      return 0xff0000; // Red
-    default:
-      return 0xffffff;
-  }
+// Create info panel with game stats
+function createInfoPanel() {
+  const panel = new PIXI.Container();
+
+  // Create stats background panels with proper spacing
+  const createStatPanel = (x, width = 140, height = 60) => {
+    const bg = new PIXI.Graphics();
+    bg.beginFill(UI_COLORS.panelBg, 0.6);
+    bg.lineStyle(1, UI_COLORS.accent1, 0.5);
+    bg.drawRect(0, 0, width, height);
+    bg.endFill();
+    bg.x = x;
+    bg.y = 10;
+    return bg;
+  };
+
+  // Calculate positions for stats panels
+  const rightMargin = 20;
+  const panelSpacing = 20;
+  let currentX = app.screen.width - rightMargin;
+
+  // Score panel
+  currentX -= 140;
+  const scorePanel = createStatPanel(currentX);
+  panel.addChild(scorePanel);
+  const scoreDisplay = createStatsDisplay("SCORE", "0", UI_COLORS.scoreGreen);
+  scoreDisplay.x = currentX + 70;
+  panel.addChild(scoreDisplay);
+
+  // Timer panel
+  currentX -= 140 + panelSpacing;
+  const timerPanel = createStatPanel(currentX);
+  panel.addChild(timerPanel);
+  const timerDisplay = createStatsDisplay("TIME", "60", UI_COLORS.timerYellow);
+  timerDisplay.x = currentX + 70;
+  panel.addChild(timerDisplay);
+
+  // Difficulty panel
+  currentX -= 140 + panelSpacing;
+  const diffPanel = createStatPanel(currentX, 160);
+  panel.addChild(diffPanel);
+  const diffDisplay = createStatsDisplay(
+    "DIFFICULTY",
+    currentDifficulty.toUpperCase(),
+    getDifficultyColor(currentDifficulty)
+  );
+  diffDisplay.x = currentX + 80;
+  panel.addChild(diffDisplay);
+
+  return panel;
 }
 
-// Create UI buttons
-function createButton(text, x, y, width = 120) {
+// Create stats display with modern style
+function createStatsDisplay(label, value, valueColor) {
+  const container = new PIXI.Container();
+
+  const labelText = new PIXI.Text(label, {
+    ...BUTTON_STYLES.default,
+    fontSize: 14,
+    fill: UI_COLORS.textSecondary,
+  });
+  labelText.y = 12;
+
+  const valueText = new PIXI.Text(value, {
+    ...BUTTON_STYLES.default,
+    fontSize: 24,
+    fill: valueColor,
+  });
+  valueText.y = 30;
+
+  // Center both texts
+  labelText.x = -labelText.width / 2;
+  valueText.x = -valueText.width / 2;
+
+  container.addChild(labelText);
+  container.addChild(valueText);
+
+  return container;
+}
+
+// Enhanced button creation with sci-fi style
+function createButton(text, x, y, width = 130) {
   const button = new PIXI.Container();
 
-  // Create button background with gradient
+  // Create button background with sci-fi design
   const buttonBg = new PIXI.Graphics();
-  buttonBg.lineStyle(2, 0x666666);
-  buttonBg.beginFill(0x333333);
-  buttonBg.drawRoundedRect(0, 0, width, 40, 8);
+  buttonBg.lineStyle(2, UI_COLORS.accent1);
+  buttonBg.beginFill(UI_COLORS.buttonBg, 0.9);
+
+  // Draw hexagonal button shape
+  const height = 40;
+  const indent = 10;
+  buttonBg.moveTo(indent, 0);
+  buttonBg.lineTo(width - indent, 0);
+  buttonBg.lineTo(width, height / 2);
+  buttonBg.lineTo(width - indent, height);
+  buttonBg.lineTo(indent, height);
+  buttonBg.lineTo(0, height / 2);
+  buttonBg.lineTo(indent, 0);
+
   buttonBg.endFill();
 
-  // Add hover effect
-  button.on("pointerover", () => {
-    buttonBg.tint = 0x444444;
-  });
-  button.on("pointerout", () => {
-    buttonBg.tint = 0xffffff;
-  });
+  // Add accent line
+  buttonBg.lineStyle(1, UI_COLORS.accent2, 0.5);
+  buttonBg.moveTo(indent, height / 2);
+  buttonBg.lineTo(width - indent, height / 2);
+
+  // Add glow filter
+  const glowFilter = new PIXI.BlurFilter();
+  glowFilter.blur = 0;
+  buttonBg.filters = [glowFilter];
 
   const buttonText = new PIXI.Text(text, {
-    fontFamily: "Arial",
+    ...BUTTON_STYLES.default,
     fontSize: 16,
-    fontWeight: "bold",
-    fill: 0xffffff,
   });
   buttonText.x = width / 2 - buttonText.width / 2;
-  buttonText.y = 20 - buttonText.height / 2;
+  buttonText.y = height / 2 - buttonText.height / 2;
 
   button.addChild(buttonBg);
   button.addChild(buttonText);
@@ -142,144 +283,54 @@ function createButton(text, x, y, width = 120) {
   button.eventMode = "static";
   button.cursor = "pointer";
 
+  // Enhanced hover effects
+  button.on("pointerover", () => {
+    buttonBg.tint = UI_COLORS.buttonHover;
+    glowFilter.blur = 4;
+    buttonText.style.fill = UI_COLORS.accent1;
+  });
+
+  button.on("pointerout", () => {
+    buttonBg.tint = 0xffffff;
+    glowFilter.blur = 0;
+    buttonText.style.fill = UI_COLORS.textPrimary;
+  });
+
+  button.on("pointerdown", () => {
+    buttonBg.tint = UI_COLORS.buttonActive;
+    buttonText.y += 1;
+  });
+
+  button.on("pointerup", () => {
+    buttonBg.tint = UI_COLORS.buttonHover;
+    buttonText.y -= 1;
+  });
+
   return button;
 }
 
-// Create difficulty selector
-function createDifficultySelector() {
-  const container = new PIXI.Container();
+// Create game control buttons with adjusted positions
+const buttonY = 20;
+const buttonSpacing = 20;
+let currentX = app.screen.width / 2 - 200;
 
-  // Create background for difficulty selector
-  const selectorBg = new PIXI.Graphics();
-  selectorBg.beginFill(0x000000, 0.7);
-  selectorBg.drawRect(0, 0, 400, 60);
-  selectorBg.endFill();
-  container.addChild(selectorBg);
-
-  // Add "Difficulty:" label
-  const label = new PIXI.Text("DIFFICULTY:", {
-    fontFamily: "Arial",
-    fontSize: 16,
-    fontWeight: "bold",
-    fill: 0xffffff,
-  });
-  label.x = 10;
-  label.y = 20;
-  container.addChild(label);
-
-  const difficulties = ["easy", "normal", "hard"];
-  difficulties.forEach((diff, index) => {
-    const button = createButton(
-      diff.toUpperCase(),
-      label.width + 20 + index * 130,
-      10
-    );
-    button.on("pointerdown", () => {
-      currentDifficulty = diff;
-      updateDifficultyButtons();
-    });
-    container.addChild(button);
-  });
-
-  container.x = app.screen.width / 2 - 200;
-  container.y = app.screen.height - 80;
-
-  return container;
-}
-
-// Update difficulty buttons appearance
-function updateDifficultyButtons() {
-  difficultySelector.children.forEach((child) => {
-    if (child instanceof PIXI.Container) {
-      const buttonBg = child.getChildAt(0);
-      const buttonText = child.getChildAt(1);
-      if (buttonText.text.toLowerCase() === currentDifficulty) {
-        buttonBg.tint = getDifficultyColor(currentDifficulty);
-        buttonText.style.fill = 0x000000;
-      } else {
-        buttonBg.tint = 0xffffff;
-        buttonText.style.fill = 0xffffff;
-      }
-    }
-  });
-
-  // Update the difficulty display in header
-  updateGameState();
-}
-
-// Create score display
-function createScoreDisplay() {
-  const scoreContainer = new PIXI.Container();
-
-  const scoreText = new PIXI.Text("SCORE:", {
-    fontFamily: "Arial",
-    fontSize: 20,
-    fontWeight: "bold",
-    fill: 0xffffff,
-  });
-  scoreText.x = app.screen.width - 200;
-  scoreText.y = 15;
-
-  const scoreValue = new PIXI.Text("0", {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fontWeight: "bold",
-    fill: 0x00ff00,
-  });
-  scoreValue.x = app.screen.width - 100;
-  scoreValue.y = 13;
-
-  scoreContainer.addChild(scoreText);
-  scoreContainer.addChild(scoreValue);
-
-  return scoreContainer;
-}
-
-// Create timer display
-function createTimerDisplay() {
-  const timerContainer = new PIXI.Container();
-
-  const timerText = new PIXI.Text("TIME:", {
-    fontFamily: "Arial",
-    fontSize: 20,
-    fontWeight: "bold",
-    fill: 0xffffff,
-  });
-  timerText.x = app.screen.width - 400;
-  timerText.y = 15;
-
-  const timerValue = new PIXI.Text("60", {
-    fontFamily: "Arial",
-    fontSize: 24,
-    fontWeight: "bold",
-    fill: 0xffff00,
-  });
-  timerValue.x = app.screen.width - 320;
-  timerValue.y = 13;
-
-  timerContainer.addChild(timerText);
-  timerContainer.addChild(timerValue);
-
-  return timerContainer;
-}
-
-// Create game control buttons
-const playButton = createButton("PLAY", app.screen.width / 2 - 190, 20);
-const pauseButton = createButton("PAUSE", app.screen.width / 2 - 60, 20);
-const restartButton = createButton("RESTART", app.screen.width / 2 + 70, 20);
-const difficultySelector = createDifficultySelector();
+const playButton = createButton("PLAY", currentX, buttonY);
+currentX += 130 + buttonSpacing;
+const pauseButton = createButton("PAUSE", currentX, buttonY);
+currentX += 130 + buttonSpacing;
+const restartButton = createButton("RESTART", currentX, buttonY);
 
 // Create UI elements
 uiContainer = createUIContainer();
-const scoreDisplay = createScoreDisplay();
-const timerDisplay = createTimerDisplay();
 
-// Add all UI elements to the container
-uiContainer.addChild(scoreDisplay);
-uiContainer.addChild(timerDisplay);
+// Add control buttons to the container
 uiContainer.addChild(playButton);
 uiContainer.addChild(pauseButton);
 uiContainer.addChild(restartButton);
+
+// Add UI to stage
+app.stage.addChild(uiContainer);
+app.stage.addChild(createDifficultySelector());
 
 // Add button event listeners
 playButton.on("pointerdown", () => {
@@ -298,41 +349,112 @@ restartButton.on("pointerdown", () => {
   resetGame();
 });
 
-// Add UI to stage
-app.stage.addChild(uiContainer);
-app.stage.addChild(difficultySelector);
-
-// Update game state visuals
+// Update game state visuals with enhanced animations and safety checks
 function updateGameState() {
-  const playButtonBg = playButton.getChildAt(0);
-  const pauseButtonBg = pauseButton.getChildAt(0);
+  if (!uiContainer) return; // Safety check for uiContainer
 
-  playButtonBg.tint = isPaused ? 0xffffff : 0x666666;
-  pauseButtonBg.tint = isPaused ? 0x666666 : 0xffffff;
+  const playButtonBg = playButton?.getChildAt(0);
+  const pauseButtonBg = pauseButton?.getChildAt(0);
 
-  // Update score and timer displays
-  const scoreValueText = scoreDisplay.getChildAt(1);
-  const timerValueText = timerDisplay.getChildAt(1);
+  if (playButtonBg && pauseButtonBg) {
+    playButtonBg.tint = isPaused ? 0xffffff : UI_COLORS.buttonActive;
+    pauseButtonBg.tint = isPaused ? UI_COLORS.buttonActive : 0xffffff;
+  }
 
-  scoreValueText.text = score.toString();
+  // Get the info panel with safety check
+  const infoPanel = uiContainer.children.find(
+    (child) => child instanceof PIXI.Container && child.children.length > 0
+  );
+  if (!infoPanel) return;
+
+  // Get the display elements with safety checks
+  const scoreContainer = infoPanel.children.find(
+    (child) =>
+      child instanceof PIXI.Container &&
+      child.children[0]?.text?.includes("SCORE")
+  );
+  const timerContainer = infoPanel.children.find(
+    (child) =>
+      child instanceof PIXI.Container &&
+      child.children[0]?.text?.includes("TIME")
+  );
+  const difficultyContainer = infoPanel.children.find(
+    (child) =>
+      child instanceof PIXI.Container &&
+      child.children[0]?.text?.includes("DIFFICULTY")
+  );
+
+  if (!scoreContainer || !timerContainer || !difficultyContainer) return;
+
+  const scoreValueText = scoreContainer.getChildAt(1);
+  const timerValueText = timerContainer.getChildAt(1);
+  const difficultyValueText = difficultyContainer.getChildAt(1);
+
+  if (!scoreValueText || !timerValueText || !difficultyValueText) return;
+
+  // Update score with animation
+  const currentScore = parseInt(scoreValueText.text);
+  if (currentScore !== score) {
+    const scoreStep = (score - currentScore) / 10;
+    const animateScore = setInterval(() => {
+      const newScore = parseInt(scoreValueText.text) + Math.ceil(scoreStep);
+      if (newScore >= score) {
+        scoreValueText.text = score.toString();
+        clearInterval(animateScore);
+      } else {
+        scoreValueText.text = newScore.toString();
+      }
+    }, 50);
+  }
+
+  // Update timer and difficulty
   timerValueText.text = timeLeft.toString();
-
-  // Update difficulty display
-  const difficultyValueText = uiContainer.children[2].getChildAt(1);
   difficultyValueText.text = currentDifficulty.toUpperCase();
   difficultyValueText.style.fill = getDifficultyColor(currentDifficulty);
 
-  // Change timer color based on time remaining
+  // Update timer color
   if (timeLeft <= 10) {
-    timerValueText.style.fill = 0xff0000;
+    timerValueText.style.fill = UI_COLORS.timerRed;
   } else if (timeLeft <= 30) {
-    timerValueText.style.fill = 0xffa500;
+    timerValueText.style.fill = UI_COLORS.timerOrange;
   } else {
-    timerValueText.style.fill = 0xffff00;
+    timerValueText.style.fill = UI_COLORS.timerYellow;
   }
 }
 
-// Reset game function
+// Helper function to safely get UI elements
+function getUIElements() {
+  if (!uiContainer) return null;
+
+  const infoPanel = uiContainer.children.find(
+    (child) => child instanceof PIXI.Container && child.children.length > 0
+  );
+  if (!infoPanel) return null;
+
+  const scoreContainer = infoPanel.children.find(
+    (child) =>
+      child instanceof PIXI.Container &&
+      child.children[0]?.text?.includes("SCORE")
+  );
+  const timerContainer = infoPanel.children.find(
+    (child) =>
+      child instanceof PIXI.Container &&
+      child.children[0]?.text?.includes("TIME")
+  );
+  const difficultyContainer = infoPanel.children.find(
+    (child) =>
+      child instanceof PIXI.Container &&
+      child.children[0]?.text?.includes("DIFFICULTY")
+  );
+
+  return {
+    scoreValue: scoreContainer?.getChildAt(1),
+    timerValue: timerContainer?.getChildAt(1),
+    difficultyValue: difficultyContainer?.getChildAt(1),
+  };
+}
+
+// Update the resetGame function to use the helper
 function resetGame() {
   score = 0;
   timeLeft = 60;
@@ -344,14 +466,17 @@ function resetGame() {
   debrisArray = [];
 
   // Reset score and timer display
-  const existingScoreDisplay = scoreDisplay.getChildAt(1);
-  const existingTimerDisplay = timerDisplay.getChildAt(1);
-  existingScoreDisplay.text = "0";
-  existingTimerDisplay.text = "60";
+  const elements = getUIElements();
+  if (elements) {
+    elements.scoreValue.text = "0";
+    elements.timerValue.text = "60";
+  }
 
   // Remove game over text if it exists
   const existingGameOver = app.stage.children.find(
-    (child) => child instanceof PIXI.Text
+    (child) =>
+      child instanceof PIXI.Container &&
+      child.children[0] instanceof PIXI.Graphics
   );
   if (existingGameOver) {
     app.stage.removeChild(existingGameOver);
@@ -477,8 +602,11 @@ function initGame() {
         app.stage.removeChild(debris);
         debrisArray.splice(i, 1);
         score += 10 * DIFFICULTY_SETTINGS[currentDifficulty].scoreMultiplier;
-        const existingScoreValue = scoreDisplay.getChildAt(1);
-        existingScoreValue.text = score.toString();
+
+        const elements = getUIElements();
+        if (elements) {
+          elements.scoreValue.text = score.toString();
+        }
       } else if (debris.x < -50) {
         // Remove debris that's gone off screen
         app.stage.removeChild(debris);
@@ -492,8 +620,10 @@ function initGame() {
     if (gameOver || isPaused) return;
 
     timeLeft--;
-    const existingTimerValue = timerDisplay.getChildAt(1);
-    existingTimerValue.text = timeLeft.toString();
+    const elements = getUIElements();
+    if (elements) {
+      elements.timerValue.text = timeLeft.toString();
+    }
 
     if (timeLeft <= 0) {
       gameOver = true;
@@ -503,54 +633,68 @@ function initGame() {
   }, 1000);
 }
 
-// Show game over screen
+// Enhanced game over screen
 function showGameOver() {
   const gameOverContainer = new PIXI.Container();
 
-  // Semi-transparent background
+  // Create animated overlay
   const overlay = new PIXI.Graphics();
-  overlay.beginFill(0x000000, 0.8);
+  overlay.beginFill(UI_COLORS.overlay, 0);
   overlay.drawRect(0, 0, app.screen.width, app.screen.height);
   overlay.endFill();
 
+  // Animate overlay opacity
+  let alpha = 0;
+  const fadeIn = setInterval(() => {
+    alpha += 0.05;
+    if (alpha >= 0.8) {
+      clearInterval(fadeIn);
+    }
+    overlay.clear();
+    overlay.beginFill(UI_COLORS.overlay, alpha);
+    overlay.drawRect(0, 0, app.screen.width, app.screen.height);
+    overlay.endFill();
+  }, 50);
+
   const gameOverText = new PIXI.Text("GAME OVER!", {
-    fontFamily: "Arial",
-    fontSize: 64,
-    fontWeight: "bold",
+    ...BUTTON_STYLES.default,
+    fontSize: 72,
     fill: 0xff0000,
-    align: "center",
+    dropShadowDistance: 4,
   });
 
   const finalScoreText = new PIXI.Text(`Final Score: ${score}`, {
-    fontFamily: "Arial",
-    fontSize: 48,
-    fontWeight: "bold",
-    fill: 0xffffff,
-    align: "center",
+    ...BUTTON_STYLES.default,
+    fontSize: 54,
   });
 
   const difficultyText = new PIXI.Text(
     `Difficulty: ${currentDifficulty.toUpperCase()}`,
     {
-      fontFamily: "Arial",
-      fontSize: 32,
-      fontWeight: "bold",
-      fill: 0x00ff00,
-      align: "center",
+      ...BUTTON_STYLES.default,
+      fontSize: 36,
+      fill: getDifficultyColor(currentDifficulty),
     }
   );
 
-  gameOverText.x = app.screen.width / 2;
-  gameOverText.y = app.screen.height / 2 - 100;
-  gameOverText.anchor.set(0.5);
+  // Center all text elements
+  [gameOverText, finalScoreText, difficultyText].forEach((text, index) => {
+    text.anchor.set(0.5);
+    text.x = app.screen.width / 2;
+    text.y = app.screen.height / 2 - 100 + index * 80;
 
-  finalScoreText.x = app.screen.width / 2;
-  finalScoreText.y = app.screen.height / 2;
-  finalScoreText.anchor.set(0.5);
-
-  difficultyText.x = app.screen.width / 2;
-  difficultyText.y = app.screen.height / 2 + 80;
-  difficultyText.anchor.set(0.5);
+    // Add scaling animation
+    text.scale.set(0);
+    setTimeout(() => {
+      const scaleUp = setInterval(() => {
+        text.scale.x += 0.1;
+        text.scale.y += 0.1;
+        if (text.scale.x >= 1) {
+          clearInterval(scaleUp);
+        }
+      }, 50);
+    }, index * 400);
+  });
 
   gameOverContainer.addChild(overlay);
   gameOverContainer.addChild(gameOverText);
@@ -568,3 +712,70 @@ updateDifficultyButtons();
 // Remove the HTML elements as we're now using PIXI Text
 document.getElementById("score").style.display = "none";
 document.getElementById("timer").style.display = "none";
+
+// Enhanced difficulty selector with sci-fi theme
+function createDifficultySelector() {
+  const container = new PIXI.Container();
+
+  // Create background with sci-fi design
+  const selectorBg = new PIXI.Graphics();
+  selectorBg.beginFill(UI_COLORS.headerBg, 0.9);
+  selectorBg.lineStyle(2, UI_COLORS.accent1);
+
+  // Draw panel with angled edges
+  const width = 500;
+  const height = 60;
+  const indent = 20;
+  selectorBg.moveTo(indent, 0);
+  selectorBg.lineTo(width - indent, 0);
+  selectorBg.lineTo(width, height);
+  selectorBg.lineTo(0, height);
+  selectorBg.lineTo(indent, 0);
+
+  // Add accent lines
+  selectorBg.lineStyle(1, UI_COLORS.accent2, 0.5);
+  for (let x = indent; x < width; x += 30) {
+    selectorBg.moveTo(x, 0);
+    selectorBg.lineTo(x + 20, height);
+  }
+
+  selectorBg.endFill();
+
+  // Add glow effect
+  const glowFilter = new PIXI.BlurFilter();
+  glowFilter.blur = 2;
+  selectorBg.filters = [glowFilter];
+
+  container.addChild(selectorBg);
+
+  // Add "SELECT DIFFICULTY:" label with enhanced style
+  const label = new PIXI.Text("SELECT DIFFICULTY:", {
+    ...BUTTON_STYLES.default,
+    fontSize: 18,
+    fill: UI_COLORS.accent1,
+  });
+  label.x = 30;
+  label.y = 20;
+  container.addChild(label);
+
+  // Create difficulty buttons with improved spacing
+  const difficulties = ["easy", "normal", "hard"];
+  const buttonSpacing = 20;
+  let buttonX = label.width + 50;
+
+  difficulties.forEach((diff, index) => {
+    const button = createButton(diff.toUpperCase(), buttonX, 10, 110);
+    buttonX += 110 + buttonSpacing;
+    button.on("pointerdown", () => {
+      currentDifficulty = diff;
+      updateDifficultyButtons();
+    });
+    container.addChild(button);
+  });
+
+  // Position at bottom of screen
+  container.x = app.screen.width / 2 - 250;
+  container.y = app.screen.height - 80;
+
+  return container;
+}
