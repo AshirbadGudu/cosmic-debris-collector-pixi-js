@@ -9,6 +9,7 @@ let debrisArray = [];
 let spaceship;
 let currentDifficulty = "normal";
 let uiContainer;
+let timerInterval;
 
 // Difficulty settings
 const DIFFICULTY_SETTINGS = {
@@ -454,15 +455,25 @@ function getUIElements() {
   };
 }
 
-// Update the resetGame function to use the helper
+// Update the resetGame function
 function resetGame() {
+  // Clear the existing timer
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+
+  // Reset game state
   score = 0;
   timeLeft = 60;
   gameOver = false;
   isPaused = true;
 
   // Clear existing debris
-  debrisArray.forEach((debris) => app.stage.removeChild(debris));
+  debrisArray.forEach((debris) => {
+    if (debris.parent) {
+      debris.parent.removeChild(debris);
+    }
+  });
   debrisArray = [];
 
   // Reset score and timer display
@@ -470,6 +481,7 @@ function resetGame() {
   if (elements) {
     elements.scoreValue.text = "0";
     elements.timerValue.text = "60";
+    elements.timerValue.style.fill = UI_COLORS.timerYellow; // Reset timer color
   }
 
   // Remove game over text if it exists
@@ -484,10 +496,17 @@ function resetGame() {
 
   // Reset spaceship position
   if (spaceship) {
-    spaceship.x = app.screen.width / 2;
-    spaceship.y = app.screen.height / 2;
+    if (spaceship.parent) {
+      spaceship.parent.removeChild(spaceship);
+    }
+    spaceship = createSpaceship();
+    app.stage.addChild(spaceship);
   }
 
+  // Start a new timer
+  startTimer();
+
+  // Update UI state
   updateGameState();
 }
 
@@ -615,8 +634,17 @@ function initGame() {
     }
   });
 
-  // Start timer
-  const timerInterval = setInterval(() => {
+  startTimer();
+}
+
+// Add new function to handle timer
+function startTimer() {
+  // Clear existing timer if it exists
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+
+  timerInterval = setInterval(() => {
     if (gameOver || isPaused) return;
 
     timeLeft--;
@@ -677,31 +705,74 @@ function showGameOver() {
     }
   );
 
-  // Center all text elements
-  [gameOverText, finalScoreText, difficultyText].forEach((text, index) => {
-    text.anchor.set(0.5);
-    text.x = app.screen.width / 2;
-    text.y = app.screen.height / 2 - 100 + index * 80;
+  // Create Play Again button with pulsing animation
+  const playAgainButton = createButton("PLAY AGAIN", 0, 0, 200);
 
-    // Add scaling animation
-    text.scale.set(0);
-    setTimeout(() => {
-      const scaleUp = setInterval(() => {
-        text.scale.x += 0.1;
-        text.scale.y += 0.1;
-        if (text.scale.x >= 1) {
-          clearInterval(scaleUp);
-        }
-      }, 50);
-    }, index * 400);
+  // Add pulsing glow effect to the button
+  const buttonGlow = playAgainButton.getChildAt(0).filters[0];
+  let glowDirection = 1;
+  const glowAnimation = setInterval(() => {
+    buttonGlow.blur += 0.2 * glowDirection;
+    if (buttonGlow.blur >= 6 || buttonGlow.blur <= 0) {
+      glowDirection *= -1;
+    }
+  }, 50);
+
+  // Add click handler for Play Again button
+  playAgainButton.on("pointerdown", () => {
+    clearInterval(glowAnimation);
+    app.stage.removeChild(gameOverContainer);
+    resetGame();
   });
+
+  // Center all text elements and button
+  [gameOverText, finalScoreText, difficultyText, playAgainButton].forEach(
+    (element, index) => {
+      if (element instanceof PIXI.Text) {
+        element.anchor.set(0.5);
+      }
+      element.x = app.screen.width / 2;
+      if (element === playAgainButton) {
+        element.x = app.screen.width / 2 - element.width / 2;
+        element.y = app.screen.height / 2 + 100;
+      } else {
+        element.y = app.screen.height / 2 - 150 + index * 80;
+      }
+
+      // Add scaling animation for text elements
+      if (element instanceof PIXI.Text) {
+        element.scale.set(0);
+        setTimeout(() => {
+          const scaleUp = setInterval(() => {
+            element.scale.x += 0.1;
+            element.scale.y += 0.1;
+            if (element.scale.x >= 1) {
+              clearInterval(scaleUp);
+            }
+          }, 50);
+        }, index * 400);
+      }
+    }
+  );
 
   gameOverContainer.addChild(overlay);
   gameOverContainer.addChild(gameOverText);
   gameOverContainer.addChild(finalScoreText);
   gameOverContainer.addChild(difficultyText);
+  gameOverContainer.addChild(playAgainButton);
 
   app.stage.addChild(gameOverContainer);
+
+  // Add keyboard shortcut to restart (Press Enter)
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      window.removeEventListener("keydown", handleKeyPress);
+      clearInterval(glowAnimation);
+      app.stage.removeChild(gameOverContainer);
+      resetGame();
+    }
+  };
+  window.addEventListener("keydown", handleKeyPress);
 }
 
 // Start the game
