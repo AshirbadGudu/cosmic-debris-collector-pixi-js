@@ -65,7 +65,45 @@ function createUIContainer() {
   titleText.y = 25;
   container.addChild(titleText);
 
+  // Add current difficulty display
+  const difficultyContainer = new PIXI.Container();
+
+  const diffLabel = new PIXI.Text("Current Difficulty:", {
+    fontFamily: "Arial",
+    fontSize: 16,
+    fill: 0xcccccc,
+  });
+  diffLabel.x = app.screen.width - 600;
+  diffLabel.y = 15;
+
+  const diffValue = new PIXI.Text(currentDifficulty.toUpperCase(), {
+    fontFamily: "Arial",
+    fontSize: 20,
+    fontWeight: "bold",
+    fill: getDifficultyColor(currentDifficulty),
+  });
+  diffValue.x = app.screen.width - 460;
+  diffValue.y = 13;
+
+  difficultyContainer.addChild(diffLabel);
+  difficultyContainer.addChild(diffValue);
+  container.addChild(difficultyContainer);
+
   return container;
+}
+
+// Helper function to get difficulty color
+function getDifficultyColor(difficulty) {
+  switch (difficulty) {
+    case "easy":
+      return 0x00ff00; // Green
+    case "normal":
+      return 0xffff00; // Yellow
+    case "hard":
+      return 0xff0000; // Red
+    default:
+      return 0xffffff;
+  }
 }
 
 // Create UI buttons
@@ -156,7 +194,7 @@ function updateDifficultyButtons() {
       const buttonBg = child.getChildAt(0);
       const buttonText = child.getChildAt(1);
       if (buttonText.text.toLowerCase() === currentDifficulty) {
-        buttonBg.tint = 0x00ff00;
+        buttonBg.tint = getDifficultyColor(currentDifficulty);
         buttonText.style.fill = 0x000000;
       } else {
         buttonBg.tint = 0xffffff;
@@ -164,6 +202,9 @@ function updateDifficultyButtons() {
       }
     }
   });
+
+  // Update the difficulty display in header
+  updateGameState();
 }
 
 // Create score display
@@ -275,6 +316,11 @@ function updateGameState() {
 
   scoreValueText.text = score.toString();
   timerValueText.text = timeLeft.toString();
+
+  // Update difficulty display
+  const difficultyValueText = uiContainer.children[2].getChildAt(1);
+  difficultyValueText.text = currentDifficulty.toUpperCase();
+  difficultyValueText.style.fill = getDifficultyColor(currentDifficulty);
 
   // Change timer color based on time remaining
   if (timeLeft <= 10) {
