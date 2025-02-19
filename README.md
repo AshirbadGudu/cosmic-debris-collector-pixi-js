@@ -116,4 +116,4 @@ Contributions are welcome! Feel free to submit issues and pull requests.
 
 ## 👥 Credits
 
-Created by [Your Name] - Feel free to contact me!
+Created by Ashirbad - Feel free to contact me!
