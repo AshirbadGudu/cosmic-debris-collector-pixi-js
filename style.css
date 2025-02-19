@@ -1,0 +1,35 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #000;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+#gameContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#score, #timer {
+    position: fixed;
+    color: white;
+    font-size: 24px;
+    padding: 20px;
+    z-index: 100;
+}
+
+#score {
+    top: 0;
+    left: 0;
+}
+
+#timer {
+    top: 0;
+    right: 0;
+} 

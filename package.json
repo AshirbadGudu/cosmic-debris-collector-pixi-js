@@ -1,0 +1,17 @@
+{
+  "name": "cosmic-debris-collector",
+  "version": "1.0.0",
+  "description": "A space game where you collect cosmic debris using PixiJS",
+  "main": "index.js",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "pixi.js": "^7.4.0"
+  },
+  "devDependencies": {
+    "vite": "^5.1.0"
+  }
+}
